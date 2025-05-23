@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국 생활 어휘 마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.292.0/dist/umd/lucide.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            overscroll-behavior-y: contain; /* Prevent pull-to-refresh on mobile */
+        }
+        .category-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .phrase-card {
+            transition: background-color 0.2s ease-in-out;
+        }
+        .phrase-card:hover {
+            background-color: #f0f9ff; /* Tailwind's sky-50 */
+        }
+        /* Custom scrollbar for phrase list (optional) */
+        #phraseList::-webkit-scrollbar {
+            width: 8px;
+        }
+        #phraseList::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        #phraseList::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        #phraseList::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Hide scrollbar when not needed, but keep functionality */
+        .modal-content {
+             max-height: 80vh; /* or any other max-height */
+             overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-100 to-indigo-200 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-sky-300 selection:text-sky-900">
+
+    <div class="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+        <header class="bg-sky-600 text-white p-6 shadow-md">
+            <h1 class="text-3xl font-bold text-center">🇰🇷 한국 생활 어휘 마스터 🗣️</h1>
+            <p class="text-center text-sky-100 mt-1">실생활에 유용한 한국어 표현을 배워보세요!</p>
+        </header>
+
+        <main class="p-6">
+            <section id="dailyTipSection" class="mb-8 p-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-2">🌟 오늘의 꿀팁!</h2>
+                <p id="dailyTipText" class="text-sm">매일 새로운 팁이나 유용한 표현이 여기에 나타납니다.</p>
+            </section>
+
+            <section id="categorySelection">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800">카테고리 선택</h2>
+                <div id="categoryGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+            </section>
+
+            <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden animate-fadeIn">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-lg modal-content">
+                    <div class="flex justify-between items-center p-5 border-b border-gray-200 sticky top-0 bg-white z-10">
+                        <h3 id="modalTitle" class="text-2xl font-semibold text-sky-700">카테고리 이름</h3>
+                        <button id="closeModalButton" class="text-gray-500 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-100">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div id="phraseList" class="p-5 space-y-3 overflow-y-auto" style="max-height: calc(80vh - 140px);">
+                        </div>
+                     <div class="p-4 border-t border-gray-200 text-center sticky bottom-0 bg-white z-10">
+                        <p class="text-xs text-gray-500">스피커 아이콘을 클릭하면 발음을 들을 수 있습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+            <p class="text-sm">&copy; <span id="currentYear"></span> 한국 생활 어휘 마스터. GitHub Pages 배포용.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Data ---
+        const categories = [
+            {
+                id: "greetings",
+                name: "👋 인사 (Greetings)",
+                emoji: "👋",
+                phrases: [
+                    { kor: "안녕하세요", rom: "annyeonghaseyo", eng: "Hello / Hi / Good morning / Good afternoon / Good evening" },
+                    { kor: "감사합니다", rom: "gamsahamnida", eng: "Thank you (formal)" },
+                    { kor: "고맙습니다", rom: "gomapseumnida", eng: "Thank you (formal, slightly softer)" },
+                    { kor: "고마워요", rom: "gomawoyo", eng: "Thank you (polite)" },
+                    { kor: "고마워", rom: "gomawo", eng: "Thanks (informal)" },
+                    { kor: "죄송합니다", rom: "joesonghamnida", eng: "I am sorry (formal)" },
+                    { kor: "미안합니다", rom: "mianhamnida", eng: "I am sorry (formal, slightly softer)" },
+                    { kor: "미안해요", rom: "mianhaeyo", eng: "Sorry (polite)" },
+                    { kor: "미안해", rom: "mianhae", eng: "Sorry (informal)" },
+                    { kor: "네", rom: "ne", eng: "Yes / I agree / Okay / What? (when called)" },
+                    { kor: "아니요", rom: "aniyo", eng: "No" },
+                    { kor: "괜찮아요", rom: "gwaenchanayo", eng: "It's okay / I'm okay / No, thank you" },
+                    { kor: "만나서 반갑습니다", rom: "mannaseo bangapseumnida", eng: "Nice to meet you" },
+                    { kor: "처음 뵙겠습니다", rom: "cheoeum boepgetseumnida", eng: "Nice to meet you for the first time (more formal)" },
+                    { kor: "안녕히 가세요", rom: "annyeonghi gaseyo", eng: "Goodbye (to someone leaving, you are staying)" },
+                    { kor: "안녕히 계세요", rom: "annyeonghi gyeseyo", eng: "Goodbye (when you are leaving, they are staying)" },
+                    { kor: "잘 가요", rom: "jal gayo", eng: "Goodbye (polite, to someone leaving)" },
+                    { kor: "잘 있어", rom: "jal isseo", eng: "Goodbye (informal, when you are leaving)" },
+                    { kor: "여보세요?", rom: "yeoboseyo?", eng: "Hello? (on the phone)" },
+                    { kor: "실례합니다", rom: "sillyehamnida", eng: "Excuse me (to get attention, or pass by)" },
+                ]
+            },
+            {
+                id: "shopping",
+                name: "🛍️ 쇼핑 (Shopping)",
+                emoji: "🛍️",
+                phrases: [
+                    { kor: "이거 얼마예요?", rom: "igeo eolmayeyo?", eng: "How much is this?" },
+                    { kor: "저거 얼마예요?", rom: "jeogeo eolmayeyo?", eng: "How much is that?" },
+                    { kor: "너무 비싸요", rom: "neomu bissayo", eng: "It's too expensive." },
+                    { kor: "좀 깎아주세요", rom: "jom kkakkajuseyo", eng: "Please give me a little discount." },
+                    { kor: "봉투 필요해요", rom: "bongtu piryohaeyo", eng: "I need a bag." },
+                    { kor: "봉투 주세요", rom: "bongtu juseyo", eng: "Please give me a bag." },
+                    { kor: "카드 돼요?", rom: "kadeu dwaeyo?", eng: "Do you accept credit cards?" },
+                    { kor: "현금으로 할게요", rom: "hyeongeumeuro halgeyo", eng: "I'll pay in cash." },
+                    { kor: "영수증 주세요", rom: "yeongsujeung juseyo", eng: "Please give me a receipt." },
+                    { kor: "이거 입어봐도 돼요?", rom: "igeo ibeobwado dwaeyo?", eng: "Can I try this on? (clothes)" },
+                    { kor: "탈의실 어디예요?", rom: "taruisil eodiyeyo?", eng: "Where is the fitting room?" },
+                    { kor: "다른 색깔 있어요?", rom: "dareun saekkkal isseoyo?", eng: "Do you have this in another color?" },
+                    { kor: "더 큰 사이즈 있어요?", rom: "deo keun saijeu isseoyo?", eng: "Do you have a bigger size?" },
+                    { kor: "더 작은 사이즈 있어요?", rom: "deo jageun saijeu isseoyo?", eng: "Do you have a smaller size?" },
+                    { kor: "이걸로 주세요", rom: "igeollo juseyo", eng: "I'll take this one." },
+                ]
+            },
+            {
+                id: "restaurant",
+                name: "🍜 식당 (Restaurant)",
+                emoji: "🍜",
+                phrases: [
+                    { kor: "메뉴 주세요", rom: "menyu juseyo", eng: "Please give me the menu." },
+                    { kor: "물 좀 주세요", rom: "mul jom juseyo", eng: "Please give me some water." },
+                    { kor: "이거 주세요", rom: "igeo juseyo", eng: "Please give me this (pointing at menu)." },
+                    { kor: "저기요!", rom: "jeogiyo!", eng: "Excuse me! (to call staff)" },
+                    { kor: "주문할게요", rom: "jumunhalgeyo", eng: "I'd like to order." },
+                    { kor: "이거 하나 주세요", rom: "igeo hana juseyo", eng: "Please give me one of this." },
+                    { kor: "이거 두 개 주세요", rom: "igeo du gae juseyo", eng: "Please give me two of this." },
+                    { kor: "화장실 어디예요?", rom: "hwajangsil eodiyeyo?", eng: "Where is the restroom?" },
+                    { kor: "잘 먹겠습니다", rom: "jal meokgetseumnida", eng: "I will eat well (before eating)." },
+                    { kor: "잘 먹었습니다", rom: "jal meogeotseumnida", eng: "I ate well (after eating)." },
+                    { kor: "계산서 주세요", rom: "gyesanseo juseyo", eng: "Please give me the bill." },
+                    { kor: "계산해주세요", rom: "gyesanhaejuseyo", eng: "Please calculate (check out)." },
+                    { kor: "따로 계산할게요", rom: "ttaro gyesanhalgeyo", eng: "We'll pay separately." },
+                    { kor: "같이 계산할게요", rom: "gachi gyesanhalgeyo", eng: "We'll pay together." },
+                    { kor: "포장해주세요", rom: "pojanghaejuseyo", eng: "Please make it to-go / wrap it up." },
+                    { kor: "덜 맵게 해주세요", rom: "deol maepge haejuseyo", eng: "Please make it less spicy." },
+                    { kor: "안 맵게 해주세요", rom: "an maepge haejuseyo", eng: "Please make it not spicy." },
+                ]
+            },
+            {
+                id: "transportation",
+                name: "🚌 교통 (Transportation)",
+                emoji: "🚌",
+                phrases: [
+                    { kor: "여기 어디예요?", rom: "yeogi eodiyeyo?", eng: "Where is here?" },
+                    { kor: "이 버스 어디 가요?", rom: "i beoseu eodi gayo?", eng: "Where does this bus go?" },
+                    { kor: "이 지하철 어디 가요?", rom: "i jihacheol eodi gayo?", eng: "Where does this subway go?" },
+                    { kor: "가장 가까운 지하철역이 어디예요?", rom: "gajang gakkaun jihacheollyeogi eodiyeyo?", eng: "Where is the nearest subway station?" },
+                    { kor: "가장 가까운 버스 정류장이 어디예요?", rom: "gajang gakkaun beoseu jeongnyujangi eodiyeyo?", eng: "Where is the nearest bus stop?" },
+                    { kor: "표 어디서 사요?", rom: "pyo eodiseo sayo?", eng: "Where can I buy a ticket?" },
+                    { kor: "교통카드 충전해주세요", rom: "gyotongkadeu chungjeonhaejuseyo", eng: "Please charge my transportation card." },
+                    { kor: "다음 정류장에서 내려주세요", rom: "daeum jeongnyujangeseo naeryeojuseyo", eng: "Please let me off at the next stop." },
+                    { kor: "여기서 내려주세요", rom: "yeogiseo naeryeojuseyo", eng: "Please let me off here." },
+                    { kor: "택시 불러주세요", rom: "taeksi bulleojuseyo", eng: "Please call a taxi for me." },
+                    { kor: "[장소]에 가주세요", rom: "[jangso]e gajuseyo", eng: "Please take me to [place]." },
+                    { kor: "얼마나 걸려요?", rom: "eolmana geollyeoyo?", eng: "How long does it take?" },
+                ]
+            },
+            {
+                id: "numbers",
+                name: "🔢 기본 숫자 (Basic Numbers)",
+                emoji: "🔢",
+                phrases: [
+                    { kor: "영 (공)", rom: "yeong (gong)", eng: "Zero" },
+                    { kor: "일 (하나)", rom: "il (hana)", eng: "One (Sino-Korean / Native Korean)" },
+                    { kor: "이 (둘)", rom: "i (dul)", eng: "Two" },
+                    { kor: "삼 (셋)", rom: "sam (set)", eng: "Three" },
+                    { kor: "사 (넷)", rom: "sa (net)", eng: "Four" },
+                    { kor: "오 (다섯)", rom: "o (daseot)", eng: "Five" },
+                    { kor: "육 (여섯)", rom: "yuk (yeoseot)", eng: "Six" },
+                    { kor: "칠 (일곱)", rom: "chil (ilgop)", eng: "Seven" },
+                    { kor: "팔 (여덟)", rom: "pal (yeodeol)", eng: "Eight" },
+                    { kor: "구 (아홉)", rom: "gu (ahop)", eng: "Nine" },
+                    { kor: "십 (열)", rom: "sip (yeol)", eng: "Ten" },
+                    { kor: "백", rom: "baek", eng: "Hundred" },
+                    { kor: "천", rom: "cheon", eng: "Thousand" },
+                    { kor: "만", rom: "man", eng: "Ten Thousand" },
+                ]
+            },
+            {
+                id: "days_time",
+                name: "📅 요일 & 시간 (Days & Time)",
+                emoji: "📅",
+                phrases: [
+                    { kor: "오늘", rom: "oneul", eng: "Today" },
+                    { kor: "어제", rom: "eoje", eng: "Yesterday" },
+                    { kor: "내일", rom: "naeil", eng: "Tomorrow" },
+                    { kor: "월요일", rom: "woryoil", eng: "Monday" },
+                    { kor: "화요일", rom: "hwayoil", eng: "Tuesday" },
+                    { kor: "수요일", rom: "suyoil", eng: "Wednesday" },
+                    { kor: "목요일", rom: "mogyoil", eng: "Thursday" },
+                    { kor: "금요일", rom: "geumyoil", eng: "Friday" },
+                    { kor: "토요일", rom: "toyoil", eng: "Saturday" },
+                    { kor: "일요일", rom: "iryoil", eng: "Sunday" },
+                    { kor: "지금 몇 시예요?", rom: "jigeum myeot siyeyo?", eng: "What time is it now?" },
+                    { kor: "아침", rom: "achim", eng: "Morning" },
+                    { kor: "점심", rom: "jeomsim", eng: "Lunchtime / Afternoon" },
+                    { kor: "저녁", rom: "jeonyeok", eng: "Evening / Dinner time" },
+                    { kor: "밤", rom: "bam", eng: "Night" },
+                ]
+            }
+        ];
+
+        const dailyTips = [
+            "한국에서는 식사 전에 '잘 먹겠습니다 (jal meokgetseumnida)'라고 말하고, 식사 후에는 '잘 먹었습니다 (jal meogeotseumnida)'라고 말하는 것이 예의입니다.",
+            "대중교통 이용 시, 노약자석은 비워두는 것이 좋습니다.",
+            "물건을 주고받을 때 두 손을 사용하는 것이 더 공손한 표현입니다.",
+            "처음 만난 사람에게는 나이를 바로 묻지 않는 것이 좋습니다. 친해진 후에 자연스럽게 알게 되는 경우가 많아요.",
+            "한국의 여름은 덥고 습하며, 겨울은 춥고 건조합니다. 계절에 맞는 옷차림을 준비하세요!",
+            "분리수거는 한국 생활의 중요한 부분입니다. 종류별로 잘 나눠서 버려주세요.",
+            "음식점에서 반찬은 대부분 무료로 리필이 가능합니다. 필요하면 직원에게 요청하세요.",
+            "지하철이나 버스에서 큰 소리로 통화하는 것은 자제하는 것이 좋습니다.",
+            "택시를 탈 때 목적지를 말하고 '가주세요 (gajuseyo)'라고 하면 됩니다. 예: '서울역 가주세요.'",
+            "한국에서는 '빨리빨리 (ppalli-ppalli)' 문화가 있어서 일 처리가 빠른 편입니다."
+        ];
+
+        // --- DOM Elements ---
+        const categoryGrid = document.getElementById('categoryGrid');
+        const phraseModal = document.getElementById('phraseModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const phraseList = document.getElementById('phraseList');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const dailyTipText = document.getElementById('dailyTipText');
+        const currentYearSpan = document.getElementById('currentYear');
+
+        // --- Functions ---
+
+        // Function to speak text
+        function speak(text, lang = 'ko-KR') {
+            if ('speechSynthesis' in window) {
+                // Stop any currently playing speech
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.9; // Slightly slower for clarity
+                window.speechSynthesis.speak(utterance);
+            } else {
+                // Fallback for browsers that don't support SpeechSynthesis
+                showCustomAlert("음성 재생을 지원하지 않는 브라우저입니다.");
+            }
+        }
+        
+        // Custom Alert Function
+        function showCustomAlert(message) {
+            const alertBox = document.createElement('div');
+            alertBox.style.position = 'fixed';
+            alertBox.style.left = '50%';
+            alertBox.style.top = '20px';
+            alertBox.style.transform = 'translateX(-50%)';
+            alertBox.style.padding = '10px 20px';
+            alertBox.style.backgroundColor = '#f8d7da'; // Bootstrap's danger color
+            alertBox.style.color = '#721c24';
+            alertBox.style.border = '1px solid #f5c6cb';
+            alertBox.style.borderRadius = '5px';
+            alertBox.style.zIndex = '1000';
+            alertBox.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            alertBox.textContent = message;
+            document.body.appendChild(alertBox);
+            setTimeout(() => {
+                alertBox.remove();
+            }, 3000);
+        }
+
+
+        // Populate categories
+        function populateCategories() {
+            categoryGrid.innerHTML = ''; // Clear existing categories
+            categories.forEach(category => {
+                const card = document.createElement('div');
+                card.className = 'category-card bg-sky-500 hover:bg-sky-600 text-white p-6 rounded-xl shadow-lg cursor-pointer flex flex-col items-center justify-center text-center';
+                card.innerHTML = `
+                    <span class="text-4xl mb-3">${category.emoji || '📖'}</span>
+                    <h3 class="text-xl font-semibold">${category.name}</h3>
+                `;
+                card.addEventListener('click', () => openPhraseModal(category));
+                categoryGrid.appendChild(card);
+            });
+        }
+
+        // Open phrase modal
+        function openPhraseModal(category) {
+            modalTitle.textContent = category.name;
+            phraseList.innerHTML = ''; // Clear previous phrases
+
+            category.phrases.forEach(phrase => {
+                const phraseCard = document.createElement('div');
+                phraseCard.className = 'phrase-card bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200';
+                
+                phraseCard.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-lg font-semibold text-sky-700">${phrase.kor}</h4>
+                        <button class="speak-button text-sky-500 hover:text-sky-700 p-1 rounded-full hover:bg-sky-100" data-text="${phrase.kor}" title="발음 듣기">
+                            <i data-lucide="volume-2" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600"><strong>발음:</strong> ${phrase.rom}</p>
+                    <p class="text-sm text-gray-500"><strong>English:</strong> ${phrase.eng}</p>
+                `;
+                phraseList.appendChild(phraseCard);
+            });
+            
+            // Add event listeners to new speak buttons
+            phraseList.querySelectorAll('.speak-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    const textToSpeak = button.dataset.text;
+                    speak(textToSpeak);
+                });
+            });
+
+            // Check if lucide is defined before calling createIcons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons(); // Re-render Lucide icons
+            } else {
+                console.error("Lucide library not loaded when trying to create icons in modal.");
+                // You might want to show a user-friendly message here as well
+            }
+            phraseModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+        }
+
+        // Close phrase modal
+        function closePhraseModal() {
+            phraseModal.classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Restore background scroll
+        }
+
+        // Set daily tip
+        function setDailyTip() {
+            const randomIndex = Math.floor(Math.random() * dailyTips.length);
+            dailyTipText.textContent = dailyTips[randomIndex];
+        }
+        
+        // Set current year in footer
+        function setCurrentYear() {
+            if (currentYearSpan) {
+                currentYearSpan.textContent = new Date().getFullYear();
+            }
+        }
+
+        // --- Event Listeners ---
+        closeModalButton.addEventListener('click', closePhraseModal);
+        phraseModal.addEventListener('click', (event) => {
+            if (event.target === phraseModal) {
+                closePhraseModal();
+            }
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !phraseModal.classList.contains('hidden')) {
+                closePhraseModal();
+            }
+        });
+
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateCategories();
+            setDailyTip();
+            setCurrentYear();
+            
+            // Check if lucide is defined before calling createIcons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons(); // Initial render for any icons outside modal
+            } else {
+                console.error("Lucide library not loaded on DOMContentLoaded.");
+                // Consider a fallback or a retry mechanism if critical
+                showCustomAlert("아이콘을 표시하는 데 문제가 발생했습니다. 페이지를 새로고침 해보세요.");
+            }
+            
+            if (!('speechSynthesis' in window)) {
+                 showCustomAlert("お使いのブラウザは音声合成をサポートしていません。一部機能が利用できません。");
+            }
+        });
+
+        // Add some animation classes for modal (optional)
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerText = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            .animate-fadeIn {
+                animation: fadeIn 0.3s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+    </script>
+</body>
+</html>
