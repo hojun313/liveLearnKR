@@ -25,7 +25,7 @@
         .phrase-card:hover {
             background-color: #f0f9ff; /* Tailwind's sky-50 */
         }
-        /* Custom scrollbar for phrase list (optional) */
+        /* Custom scrollbar for phrase list */
         #phraseList::-webkit-scrollbar {
             width: 8px;
         }
@@ -40,22 +40,40 @@
         #phraseList::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-        /* Hide scrollbar when not needed, but keep functionality */
+        
+        /* Modal content styling for scroll behavior */
         .modal-content {
-             max-height: 80vh; /* or any other max-height */
-             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            max-height: 80vh; /* 모달 전체의 최대 높이 */
+            /* overflow-y: auto; 제거 -> 각 파트에서 스크롤 관리 */
+        }
+
+        #phraseList {
+            overflow-y: auto; /* phraseList 자체에서 스크롤 */
+            flex-grow: 1; /* 남은 공간을 채우도록 함 */
+            /* max-height는 JavaScript에서 동적으로 설정하거나, 필요시 여기서 고정값 설정 가능 */
+        }
+
+        /* Animation for modal */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
         }
     </style>
 </head>
 <body class="bg-gradient-to-br from-sky-100 to-indigo-200 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-sky-300 selection:text-sky-900">
 
-    <div class="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+    <div class="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col" style="max-height: 95vh;">
         <header class="bg-sky-600 text-white p-6 shadow-md">
             <h1 class="text-3xl font-bold text-center">🇰🇷 한국 생활 어휘 마스터 🗣️</h1>
             <p class="text-center text-sky-100 mt-1">실생활에 유용한 한국어 표현을 배워보세요!</p>
         </header>
 
-        <main class="p-6">
+        <main class="p-6 flex-grow overflow-y-auto">
             <section id="dailyTipSection" class="mb-8 p-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg shadow">
                 <h2 class="text-xl font-semibold mb-2">🌟 오늘의 꿀팁!</h2>
                 <p id="dailyTipText" class="text-sm">매일 새로운 팁이나 유용한 표현이 여기에 나타납니다.</p>
@@ -67,15 +85,15 @@
                     </div>
             </section>
 
-            <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden animate-fadeIn">
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-lg modal-content">
+            <div id="phraseModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 hidden">
+                <div class="bg-white rounded-lg shadow-xl w-full max-w-lg modal-content animate-fadeIn">
                     <div class="flex justify-between items-center p-5 border-b border-gray-200 sticky top-0 bg-white z-10">
                         <h3 id="modalTitle" class="text-2xl font-semibold text-sky-700">카테고리 이름</h3>
                         <button id="closeModalButton" class="text-gray-500 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-100">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
-                    <div id="phraseList" class="p-5 space-y-3 overflow-y-auto" style="max-height: calc(80vh - 140px);">
+                    <div id="phraseList" class="p-5 space-y-3">
                         </div>
                      <div class="p-4 border-t border-gray-200 text-center sticky bottom-0 bg-white z-10">
                         <p class="text-xs text-gray-500">스피커 아이콘을 클릭하면 발음을 들을 수 있습니다.</p>
@@ -84,7 +102,7 @@
             </div>
         </main>
 
-        <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <footer class="bg-gray-800 text-white text-center p-4">
             <p class="text-sm">&copy; <span id="currentYear"></span> 한국 생활 어휘 마스터. GitHub Pages 배포용.</p>
         </footer>
     </div>
@@ -256,15 +274,13 @@
         // Function to speak text
         function speak(text, lang = 'ko-KR') {
             if ('speechSynthesis' in window) {
-                // Stop any currently playing speech
-                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel(); // Stop any currently playing speech
                 
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = lang;
-                utterance.rate = 0.9; // Slightly slower for clarity
+                utterance.rate = 0.9; 
                 window.speechSynthesis.speak(utterance);
             } else {
-                // Fallback for browsers that don't support SpeechSynthesis
                 showCustomAlert("음성 재생을 지원하지 않는 브라우저입니다.");
             }
         }
@@ -277,7 +293,7 @@
             alertBox.style.top = '20px';
             alertBox.style.transform = 'translateX(-50%)';
             alertBox.style.padding = '10px 20px';
-            alertBox.style.backgroundColor = '#f8d7da'; // Bootstrap's danger color
+            alertBox.style.backgroundColor = '#f8d7da'; 
             alertBox.style.color = '#721c24';
             alertBox.style.border = '1px solid #f5c6cb';
             alertBox.style.borderRadius = '5px';
@@ -293,7 +309,7 @@
 
         // Populate categories
         function populateCategories() {
-            categoryGrid.innerHTML = ''; // Clear existing categories
+            categoryGrid.innerHTML = ''; 
             categories.forEach(category => {
                 const card = document.createElement('div');
                 card.className = 'category-card bg-sky-500 hover:bg-sky-600 text-white p-6 rounded-xl shadow-lg cursor-pointer flex flex-col items-center justify-center text-center';
@@ -309,7 +325,7 @@
         // Open phrase modal
         function openPhraseModal(category) {
             modalTitle.textContent = category.name;
-            phraseList.innerHTML = ''; // Clear previous phrases
+            phraseList.innerHTML = ''; 
 
             category.phrases.forEach(phrase => {
                 const phraseCard = document.createElement('div');
@@ -328,7 +344,6 @@
                 phraseList.appendChild(phraseCard);
             });
             
-            // Add event listeners to new speak buttons
             phraseList.querySelectorAll('.speak-button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     e.stopPropagation(); 
@@ -337,21 +352,24 @@
                 });
             });
 
-            // Check if lucide is defined before calling createIcons
+            // phraseList.style.maxHeight = 'calc(80vh - 140px)'; // 이 줄은 CSS로 옮기거나, 필요시 유지
+            // 만약 phraseList의 높이가 동적으로 변해야 한다면 JavaScript에서 설정하는 것이 유효합니다.
+            // 현재는 CSS에서 flex-grow: 1로 설정하여 남은 공간을 채우도록 했습니다.
+
             if (typeof lucide !== 'undefined') {
-                lucide.createIcons(); // Re-render Lucide icons
+                lucide.createIcons(); 
             } else {
                 console.error("Lucide library not loaded when trying to create icons in modal.");
-                // You might want to show a user-friendly message here as well
+                showCustomAlert("아이콘을 표시하는 데 문제가 발생했습니다.");
             }
             phraseModal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Prevent background scroll
+            document.body.style.overflow = 'hidden'; 
         }
 
         // Close phrase modal
         function closePhraseModal() {
             phraseModal.classList.add('hidden');
-            document.body.style.overflow = 'auto'; // Restore background scroll
+            document.body.style.overflow = 'auto'; 
         }
 
         // Set daily tip
@@ -362,6 +380,7 @@
         
         // Set current year in footer
         function setCurrentYear() {
+            const currentYearSpan = document.getElementById('currentYear'); // 함수 내 지역 변수로 사용
             if (currentYearSpan) {
                 currentYearSpan.textContent = new Date().getFullYear();
             }
@@ -370,7 +389,8 @@
         // --- Event Listeners ---
         closeModalButton.addEventListener('click', closePhraseModal);
         phraseModal.addEventListener('click', (event) => {
-            if (event.target === phraseModal) {
+            // 모달 배경 클릭 시 닫기 (modal-content 내부 클릭은 제외)
+            if (event.target === phraseModal) { 
                 closePhraseModal();
             }
         });
@@ -387,33 +407,32 @@
             setDailyTip();
             setCurrentYear();
             
-            // Check if lucide is defined before calling createIcons
             if (typeof lucide !== 'undefined') {
-                lucide.createIcons(); // Initial render for any icons outside modal
+                lucide.createIcons(); 
             } else {
                 console.error("Lucide library not loaded on DOMContentLoaded.");
-                // Consider a fallback or a retry mechanism if critical
                 showCustomAlert("아이콘을 표시하는 데 문제가 발생했습니다. 페이지를 새로고침 해보세요.");
             }
             
             if (!('speechSynthesis' in window)) {
-                 showCustomAlert("お使いのブラウザは音声合成をサポートしていません。一部機能が利用できません。");
+                 // 수정된 부분: 일본어 메시지를 한국어로 변경
+                 showCustomAlert("음성 합성을 지원하지 않는 브라우저입니다. 일부 기능이 제한될 수 있습니다.");
             }
         });
 
-        // Add some animation classes for modal (optional)
-        const styleSheet = document.createElement("style");
-        styleSheet.type = "text/css";
-        styleSheet.innerText = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: scale(0.95); }
-                to { opacity: 1; transform: scale(1); }
-            }
-            .animate-fadeIn {
-                animation: fadeIn 0.3s ease-out forwards;
-            }
-        `;
-        document.head.appendChild(styleSheet);
+        // 애니메이션 클래스는 <style> 태그로 이동했습니다.
+        // const styleSheet = document.createElement("style");
+        // styleSheet.type = "text/css";
+        // styleSheet.innerText = `
+        //     @keyframes fadeIn {
+        //         from { opacity: 0; transform: scale(0.95); }
+        //         to { opacity: 1; transform: scale(1); }
+        //     }
+        //     .animate-fadeIn {
+        //         animation: fadeIn 0.3s ease-out forwards;
+        //     }
+        // `;
+        // document.head.appendChild(styleSheet);
 
     </script>
 </body>
