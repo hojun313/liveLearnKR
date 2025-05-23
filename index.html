@@ -41,27 +41,60 @@
             background: #555;
         }
         
-        /* Modal content styling for scroll behavior */
         .modal-content {
             display: flex;
             flex-direction: column;
-            max-height: 80vh; /* 모달 전체의 최대 높이 */
-            /* overflow-y: auto; 제거 -> 각 파트에서 스크롤 관리 */
+            max-height: 85vh; /* 모달 전체의 최대 높이 약간 늘림 */
         }
 
         #phraseList {
-            overflow-y: auto; /* phraseList 자체에서 스크롤 */
-            flex-grow: 1; /* 남은 공간을 채우도록 함 */
-            /* max-height는 JavaScript에서 동적으로 설정하거나, 필요시 여기서 고정값 설정 가능 */
+            overflow-y: auto; 
+            flex-grow: 1; 
         }
 
-        /* Animation for modal */
         @keyframes fadeIn {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
         .animate-fadeIn {
             animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* 로딩 스피너 스타일 */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .gemini-button {
+            background-color: #8A2BE2; /* 보라색 계열 */
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .gemini-button:hover {
+            background-color: #7B1FA2;
+        }
+        .example-sentence-container {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9d5ff; /* 연한 보라색 배경 */
+            border-radius: 8px;
+            border-left: 4px solid #8A2BE2;
         }
     </style>
 </head>
@@ -75,8 +108,13 @@
 
         <main class="p-6 flex-grow overflow-y-auto">
             <section id="dailyTipSection" class="mb-8 p-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg shadow">
-                <h2 class="text-xl font-semibold mb-2">🌟 오늘의 꿀팁!</h2>
-                <p id="dailyTipText" class="text-sm">매일 새로운 팁이나 유용한 표현이 여기에 나타납니다.</p>
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xl font-semibold">🌟 오늘의 꿀팁!</h2>
+                    <button id="newTipButton" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-3 rounded-md transition-colors flex items-center">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-1"></i>새 꿀팁 보기
+                    </button>
+                </div>
+                <p id="dailyTipText" class="text-sm min-h-[40px]">꿀팁을 생성 중입니다...</p> 
             </section>
 
             <section id="categorySelection">
@@ -90,7 +128,7 @@
                     <div class="flex justify-between items-center p-5 border-b border-gray-200 sticky top-0 bg-white z-10">
                         <h3 id="modalTitle" class="text-2xl font-semibold text-sky-700">카테고리 이름</h3>
                         <button id="closeModalButton" class="text-gray-500 hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-100">
-                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            <i data-lucide="x" class="w-7 h-7"></i>
                         </button>
                     </div>
                     <div id="phraseList" class="p-5 space-y-3">
@@ -103,13 +141,14 @@
         </main>
 
         <footer class="bg-gray-800 text-white text-center p-4">
-            <p class="text-sm">&copy; <span id="currentYear"></span> 한국 생활 어휘 마스터. GitHub Pages 배포용.</p>
+            <p class="text-sm">&copy; <span id="currentYear"></span> 한국 생활 어휘 마스터. Gemini API 적용.</p>
         </footer>
     </div>
 
     <script>
         // --- Data ---
         const categories = [
+            // 기존 카테고리 데이터 유지
             {
                 id: "greetings",
                 name: "👋 인사 (Greetings)",
@@ -247,19 +286,6 @@
             }
         ];
 
-        const dailyTips = [
-            "한국에서는 식사 전에 '잘 먹겠습니다 (jal meokgetseumnida)'라고 말하고, 식사 후에는 '잘 먹었습니다 (jal meogeotseumnida)'라고 말하는 것이 예의입니다.",
-            "대중교통 이용 시, 노약자석은 비워두는 것이 좋습니다.",
-            "물건을 주고받을 때 두 손을 사용하는 것이 더 공손한 표현입니다.",
-            "처음 만난 사람에게는 나이를 바로 묻지 않는 것이 좋습니다. 친해진 후에 자연스럽게 알게 되는 경우가 많아요.",
-            "한국의 여름은 덥고 습하며, 겨울은 춥고 건조합니다. 계절에 맞는 옷차림을 준비하세요!",
-            "분리수거는 한국 생활의 중요한 부분입니다. 종류별로 잘 나눠서 버려주세요.",
-            "음식점에서 반찬은 대부분 무료로 리필이 가능합니다. 필요하면 직원에게 요청하세요.",
-            "지하철이나 버스에서 큰 소리로 통화하는 것은 자제하는 것이 좋습니다.",
-            "택시를 탈 때 목적지를 말하고 '가주세요 (gajuseyo)'라고 하면 됩니다. 예: '서울역 가주세요.'",
-            "한국에서는 '빨리빨리 (ppalli-ppalli)' 문화가 있어서 일 처리가 빠른 편입니다."
-        ];
-
         // --- DOM Elements ---
         const categoryGrid = document.getElementById('categoryGrid');
         const phraseModal = document.getElementById('phraseModal');
@@ -268,14 +294,18 @@
         const closeModalButton = document.getElementById('closeModalButton');
         const dailyTipText = document.getElementById('dailyTipText');
         const currentYearSpan = document.getElementById('currentYear');
+        const newTipButton = document.getElementById('newTipButton');
+
+        // Gemini API Configuration
+        const API_KEY = ""; // 중요: 실제 사용 시 여기에 API 키를 입력하거나, 환경 변수에서 로드하세요. Canvas 환경에서는 비워두면 자동으로 제공될 수 있습니다.
+        const GEMINI_API_URL_GENERATE_CONTENT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
         // --- Functions ---
 
         // Function to speak text
         function speak(text, lang = 'ko-KR') {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Stop any currently playing speech
-                
+                window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = lang;
                 utterance.rate = 0.9; 
@@ -286,16 +316,22 @@
         }
         
         // Custom Alert Function
-        function showCustomAlert(message) {
+        function showCustomAlert(message, type = 'error') {
             const alertBox = document.createElement('div');
             alertBox.style.position = 'fixed';
             alertBox.style.left = '50%';
             alertBox.style.top = '20px';
             alertBox.style.transform = 'translateX(-50%)';
             alertBox.style.padding = '10px 20px';
-            alertBox.style.backgroundColor = '#f8d7da'; 
-            alertBox.style.color = '#721c24';
-            alertBox.style.border = '1px solid #f5c6cb';
+            if (type === 'success') {
+                alertBox.style.backgroundColor = '#d4edda';
+                alertBox.style.color = '#155724';
+                alertBox.style.border = '1px solid #c3e6cb';
+            } else { // error or default
+                alertBox.style.backgroundColor = '#f8d7da'; 
+                alertBox.style.color = '#721c24';
+                alertBox.style.border = '1px solid #f5c6cb';
+            }
             alertBox.style.borderRadius = '5px';
             alertBox.style.zIndex = '1000';
             alertBox.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
@@ -305,7 +341,6 @@
                 alertBox.remove();
             }, 3000);
         }
-
 
         // Populate categories
         function populateCategories() {
@@ -340,6 +375,13 @@
                     </div>
                     <p class="text-sm text-gray-600"><strong>발음:</strong> ${phrase.rom}</p>
                     <p class="text-sm text-gray-500"><strong>English:</strong> ${phrase.eng}</p>
+                    <div class="mt-3">
+                        <button class="generate-example-button gemini-button" data-phrase-kor="${phrase.kor}">
+                            ✨ 예문 생성
+                        </button>
+                        <div class="example-sentences-placeholder mt-2"></div>
+                        <div class="loading-spinner-placeholder mt-2" style="display: none;"><div class="loader"></div> <span class="text-sm text-gray-500 ml-2">예문 생성 중...</span></div>
+                    </div>
                 `;
                 phraseList.appendChild(phraseCard);
             });
@@ -352,9 +394,47 @@
                 });
             });
 
-            // phraseList.style.maxHeight = 'calc(80vh - 140px)'; // 이 줄은 CSS로 옮기거나, 필요시 유지
-            // 만약 phraseList의 높이가 동적으로 변해야 한다면 JavaScript에서 설정하는 것이 유효합니다.
-            // 현재는 CSS에서 flex-grow: 1로 설정하여 남은 공간을 채우도록 했습니다.
+            phraseList.querySelectorAll('.generate-example-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const koreanPhrase = e.target.dataset.phraseKor;
+                    const placeholder = e.target.closest('.phrase-card').querySelector('.example-sentences-placeholder');
+                    const spinnerPlaceholder = e.target.closest('.phrase-card').querySelector('.loading-spinner-placeholder');
+                    
+                    // 이전 예문과 버튼 숨기기 (새로 생성 시)
+                    placeholder.innerHTML = '';
+                    e.target.style.display = 'none'; // "예문 생성" 버튼 숨기기
+                    spinnerPlaceholder.style.display = 'flex'; // 로딩 스피너 보이기
+
+                    try {
+                        const examples = await fetchExampleSentences(koreanPhrase);
+                        if (examples && examples.length > 0) {
+                            const examplesHtml = examples.map((ex, index) => `
+                                <div class="example-sentence-container">
+                                    <p class="text-sm"><strong>예문 ${index + 1}:</strong> ${ex.kor}</p>
+                                    <p class="text-xs text-gray-600"><em>(Eng: ${ex.eng})</em></p>
+                                </div>
+                            `).join('');
+                            placeholder.innerHTML = examplesHtml + '<button class="close-examples-button mt-2 text-xs text-red-500 hover:text-red-700">예문 닫기</button>';
+                            
+                            placeholder.querySelector('.close-examples-button').addEventListener('click', () => {
+                                placeholder.innerHTML = '';
+                                e.target.style.display = 'inline-flex'; // "예문 생성" 버튼 다시 보이기
+                            });
+
+                        } else {
+                            placeholder.innerHTML = '<p class="text-sm text-red-500">예문 생성에 실패했거나 예문이 없습니다.</p>';
+                             e.target.style.display = 'inline-flex'; // 실패 시 버튼 다시 보이기
+                        }
+                    } catch (error) {
+                        console.error("Error fetching example sentences:", error);
+                        showCustomAlert("예문 생성 중 오류가 발생했습니다.");
+                        placeholder.innerHTML = '<p class="text-sm text-red-500">예문 생성 중 오류가 발생했습니다.</p>';
+                        e.target.style.display = 'inline-flex'; // 오류 시 버튼 다시 보이기
+                    } finally {
+                        spinnerPlaceholder.style.display = 'none'; // 로딩 스피너 숨기기
+                    }
+                });
+            });
 
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons(); 
@@ -371,25 +451,125 @@
             phraseModal.classList.add('hidden');
             document.body.style.overflow = 'auto'; 
         }
-
-        // Set daily tip
-        function setDailyTip() {
-            const randomIndex = Math.floor(Math.random() * dailyTips.length);
-            dailyTipText.textContent = dailyTips[randomIndex];
-        }
         
         // Set current year in footer
         function setCurrentYear() {
-            const currentYearSpan = document.getElementById('currentYear'); // 함수 내 지역 변수로 사용
+            const currentYearSpan = document.getElementById('currentYear');
             if (currentYearSpan) {
                 currentYearSpan.textContent = new Date().getFullYear();
             }
         }
 
+        // --- Gemini API Functions ---
+        async function generateTextFromGemini(prompt) {
+            // Gemini API 호출 (텍스트 생성용)
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+
+            try {
+                const response = await fetch(GEMINI_API_URL_GENERATE_CONTENT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("Gemini API Error HTTP Status:", response.status, errorBody);
+                    throw new Error(`Gemini API request failed with status ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected response structure from Gemini API:", result);
+                    throw new Error("Gemini API가 유효한 응답을 반환하지 않았습니다.");
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                throw error; // 에러를 다시 던져서 호출한 쪽에서 처리하도록 함
+            }
+        }
+
+        async function fetchDailyTip() {
+            // 오늘의 꿀팁 생성 함수
+            dailyTipText.innerHTML = '<div class="loader" style="width:16px; height:16px; border-top-color: #f59e0b;"></div> <span class="ml-2 text-sm">새로운 꿀팁을 생성 중입니다...</span>';
+            newTipButton.disabled = true;
+            try {
+                const prompt = "한국 생활이나 한국어 학습에 대한 짧고 유용한 팁을 한 문장으로 알려주세요. 너무 길지 않게, 한두 줄로 요약해주세요.";
+                const tip = await generateTextFromGemini(prompt);
+                dailyTipText.textContent = tip || "새로운 꿀팁을 가져오는데 실패했습니다. 잠시 후 다시 시도해주세요.";
+            } catch (error) {
+                dailyTipText.textContent = "꿀팁 로딩 실패! 네트워크 연결을 확인해주세요.";
+                showCustomAlert("오늘의 꿀팁을 가져오는 데 실패했습니다.");
+            } finally {
+                newTipButton.disabled = false;
+                 if (typeof lucide !== 'undefined') { // 아이콘 재렌더링
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        async function fetchExampleSentences(koreanPhrase) {
+            // 선택된 표현에 대한 예문 생성 함수 (JSON 형식 응답 기대)
+            const prompt = `"${koreanPhrase}"라는 한국어 표현을 사용한 실생활 예문 2개를 만들어주세요. 각 예문은 한국어(kor)와 영어 번역(eng)을 포함해야 합니다. 반드시 JSON 형식으로만 응답해주세요. 예시 형식: [{"kor": "첫 번째 한국어 예문입니다.", "eng": "This is the first Korean example sentence."}, {"kor": "두 번째 한국어 예문입니다.", "eng": "This is the second Korean example sentence."}]`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "kor": { "type": "STRING", description: "한국어 예문" },
+                                "eng": { "type": "STRING", description: "영어 번역" }
+                            },
+                            required: ["kor", "eng"]
+                        }
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(GEMINI_API_URL_GENERATE_CONTENT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("Gemini API Error (Examples) HTTP Status:", response.status, errorBody);
+                    throw new Error(`Gemini API (Examples) request failed with status ${response.status}`);
+                }
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    // API 응답에서 텍스트 부분을 가져와 JSON으로 파싱
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    return JSON.parse(jsonText); 
+                } else {
+                     console.error("Unexpected response structure from Gemini API (Examples):", result);
+                    // 응답에 'text' 필드가 없는 경우, Gemini API가 스키마에 맞지 않는 응답을 했을 수 있음
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                         throw new Error(`Gemini API가 요청을 차단했습니다: ${result.promptFeedback.blockReason}`);
+                    }
+                    throw new Error("Gemini API (Examples)가 유효한 JSON 응답을 반환하지 않았습니다.");
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API for examples:", error);
+                throw error;
+            }
+        }
+
+
         // --- Event Listeners ---
         closeModalButton.addEventListener('click', closePhraseModal);
         phraseModal.addEventListener('click', (event) => {
-            // 모달 배경 클릭 시 닫기 (modal-content 내부 클릭은 제외)
             if (event.target === phraseModal) { 
                 closePhraseModal();
             }
@@ -399,12 +579,13 @@
                 closePhraseModal();
             }
         });
+        newTipButton.addEventListener('click', fetchDailyTip);
 
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             populateCategories();
-            setDailyTip();
+            fetchDailyTip(); // 페이지 로드 시 오늘의 꿀팁 가져오기
             setCurrentYear();
             
             if (typeof lucide !== 'undefined') {
@@ -415,24 +596,9 @@
             }
             
             if (!('speechSynthesis' in window)) {
-                 // 수정된 부분: 일본어 메시지를 한국어로 변경
                  showCustomAlert("음성 합성을 지원하지 않는 브라우저입니다. 일부 기능이 제한될 수 있습니다.");
             }
         });
-
-        // 애니메이션 클래스는 <style> 태그로 이동했습니다.
-        // const styleSheet = document.createElement("style");
-        // styleSheet.type = "text/css";
-        // styleSheet.innerText = `
-        //     @keyframes fadeIn {
-        //         from { opacity: 0; transform: scale(0.95); }
-        //         to { opacity: 1; transform: scale(1); }
-        //     }
-        //     .animate-fadeIn {
-        //         animation: fadeIn 0.3s ease-out forwards;
-        //     }
-        // `;
-        // document.head.appendChild(styleSheet);
 
     </script>
 </body>
